@@ -1,90 +1,282 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>金十实时快讯</title>
-  <meta name="theme-color" content="#000000">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  ">
-  <meta name="apple-mobile-web-app-title" content="金十快讯">
-  <link rel="apple-touch-icon" href="https://cdn.jin10.com/assets/img/apple-touch-icon.png">
-  <link rel="manifest" href="manifest.json">
-  <style>
-    :root{--bg:#000;--card:#111;--text:#fff;--sub:#aaa;--gold:#d4af37}
-    @media (prefers-color-scheme: light){:root{--bg:#fff;--card:#f8f8f9;--text:#000;--sub:#666}}
-    body{margin:0;font-family:-apple-system,system-ui,sans-serif;background:var(--bg);color:var(--text);overscroll-behavior:none;padding-top:env(safe-area-inset-top)}
-    header{position:sticky;top:0;background:var(--bg);backdrop-filter:blur(12px);padding:16px;text-align:center;font-size:18px;font-weight:600;border-bottom:1px solid rgba(255,255,255,.08);z-index:10;text-align:center}
-    .live{background:var(--gold);color:#000;padding:3px 9px;border-radius:12px;margin-left:8px;font-size:12px;font-weight:bold;animation:p 2s infinite}
-    @keyframes p{50%{opacity:.6}}
-    #list{padding:12px}
-    .item{background:var(--card);padding:15px;margin-bottom:12px;border-radius:14px;animation:i .4s;border-left:4px solid transparent}
-    .item.i{border-left-color:var(--gold);background:rgba(212,175,55,.12)}
-    .time{color:var(--sub);font-size:13px;margin-bottom:8px}
-    .content{font-size:15.5px;line-height:1.55;white-space:pre-wrap}
-    .loading{text-align:center;padding:80px 20px;color:var(--sub);font-size:15px}
-    @keyframes i{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="description" content="金十数据实时快讯PWA">
+    <title>金十快讯</title>
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="金十快讯">
+    
+    <link rel="apple-touch-icon" href="https://cdn.jin10.com/assets/img/commons/logo_blue.png">
+    <link rel="icon" type="image/png" href="https://cdn.jin10.com/assets/img/commons/logo_blue.png">
+
+    <link rel="manifest" href="manifest.json">
+
+    <style>
+        /* 全局重置与字体 */
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #121212; /* 深色背景 */
+            color: #e0e0e0;
+            -webkit-tap-highlight-color: transparent;
+            padding-bottom: 40px; /* 底部留白 */
+        }
+
+        /* 顶部导航栏 - 仿 iOS 毛玻璃效果 */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background-color: rgba(25, 25, 25, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 16px;
+            padding-top: env(safe-area-inset-top); /* 适配刘海屏 */
+            z-index: 1000;
+            height: calc(60px + env(safe-area-inset-top));
+        }
+
+        h1 {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0;
+            color: #4facfe;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+        }
+
+        /* 状态指示器 */
+        .status-badge {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #888;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            background-color: #666;
+            border-radius: 50%;
+        }
+        .status-badge.live { color: #4caf50; background: rgba(76, 175, 80, 0.15); }
+        .status-badge.live .status-dot { background-color: #4caf50; box-shadow: 0 0 6px #4caf50; animation: pulse 2s infinite; }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        /* 快讯列表容器 */
+        #app {
+            margin-top: calc(70px + env(safe-area-inset-top));
+            padding: 0 16px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* 单条快讯卡片 */
+        .news-item {
+            background: #1e1e1e;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            position: relative;
+            border-left: 4px solid #3d3d3d;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            transform: translateY(10px);
+            animation: fadeIn 0.4s ease forwards;
+        }
+
+        .news-item.important {
+            border-left-color: #ff4b4b; /* 重要消息红边 */
+            background: linear-gradient(90deg, rgba(255, 75, 75, 0.05) 0%, #1e1e1e 100%);
+        }
+
+        .time {
+            font-size: 13px;
+            color: #888;
+            margin-bottom: 8px;
+            font-family: "SF Mono", Menlo, monospace;
+        }
+
+        .content {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #ddd;
+            word-wrap: break-word;
+        }
+        
+        /* 金十数据中的高亮标签样式 */
+        .content b { color: #fff; font-weight: 700; }
+        .content a { color: #4facfe; text-decoration: none; }
+
+        @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
+
+        .loading { text-align: center; padding: 40px; color: #666; font-size: 14px; }
+        
+        /* 错误提示 */
+        .error-msg {
+            text-align: center;
+            padding: 20px;
+            color: #ff4b4b;
+            background: rgba(255, 75, 75, 0.1);
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+    </style>
 </head>
 <body>
-  <header>金十实时快讯 <span class="live">LIVE</span></header>
-  <div id="list"><div class="loading">正在加载最新快讯…</div></div>
 
-  <script>
-    const list = document.getElementById('list');
-    let latestId = 0;
+<header>
+    <h1>⚡ 金十快讯</h1>
+    <div id="status" class="status-badge">
+        <div class="status-dot"></div>
+        <span id="status-text">连接中</span>
+    </div>
+</header>
 
-    // ↓↓↓ 重要：把这里换成你在 https://open.jin10.com 申请的 Token ↓↓↓
-    //const MY_TOKEN = "b4a9e8e4d6f3a2c1b9e8d7c6f5a4b3c2d1e0f9e8d7c6b5a4";   // ← 替换成你的！
+<div id="app">
+    <div class="loading">正在初始化数据流...</div>
+</div>
 
-    // 你的 Cloudflare Workers 中转地址（已完美对接）
-    const API = "https://jin10-proxy.qdshow.workers.dev/?token=b4a9e8e4d6f3a2c1b9e8d7c6f5a4b3c2d1e0f9e8d7c6b5a4";
+<script>
+    // ==========================================
+    // ⚠️ 请在此处替换你的 Cloudflare Worker 地址
+    // ==========================================
+    const API_URL = 'https://jin10-proxy.qdshow.workers.dev/'; 
     
-    //const API = `https://jin10-proxy.qdshow.workers.dev/?token=${MY_TOKEN}`;
+    let lastUpdateParams = { id: null, time: null };
+    let isFirstLoad = true;
 
-    async function load() {
-      try {
-        const res = await fetch(API + "&_=" + Date.now());
-        if (!res.ok) throw new Error("HTTP " + res.status);
-        
-        const {data} = await res.json();
-        if (!Array.isArray(data)) throw new Error("数据格式错误");
-
-        const newItems = data.filter(x => x.id > latestId);
-        if (newItems.length === 0) return;
-
-        latestId = Math.max(...newItems.map(x => x.id));
-
-        newItems.reverse().forEach(item => {
-          const important = (item.remark || "").includes("重要") || item.type === 1;
-          const div = document.createElement("div");
-          div.className = "item" + (important ? " i" : "");
-          div.innerHTML = `
-            <div class="time">${new Date(item.time).toLocaleString("zh-CN",{hour12:false})}</div>
-            <div class="content">${item.content.replace(/\n/g,"<br>")}</div>
-          `;
-          list.insertBefore(div, list.firstChild);
-        });
-
-        list.querySelector(".loading")?.remove();
-      } catch (e) {
-        console.error(e);
-        if (!list.querySelector(".error")) {
-          list.innerHTML += '<div class="loading error">获取失败，请检查 Token 是否正确<br>3秒后自动重试…</div>';
-        }
-      }
+    // 工具：格式化时间
+    function formatTime(dateString) {
+        const date = new Date(dateString);
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        const seconds = date.getSeconds().toString().padStart(2, '0');
+        return `${hours}:${minutes}:${seconds}`;
     }
 
-    load();
-    setInterval(load, 3000);
+    // 核心：获取数据
+    async function fetchNews() {
+        const statusEl = document.getElementById('status');
+        const statusTextEl = document.getElementById('status-text');
+        
+        try {
+            const response = await fetch(API_URL);
+            if (!response.ok) throw new Error('Network response was not ok');
+            
+            const json = await response.json();
+            const newsList = json.data; // 金十的结构通常是 { data: [...] }
 
-    // 下拉刷新
-    let startY=0;
-    addEventListener("touchstart", e=>startY=e.touches[0].clientY);
-    addEventListener("touchend", e=>{
-      if (scrollY===0 && e.changedTouches[0].clientY - startY > 100) location.reload();
-    });
-  </script>
+            if (newsList && newsList.length > 0) {
+                updateUI(newsList);
+                
+                // 更新状态栏
+                statusEl.classList.add('live');
+                statusTextEl.innerText = '实时连接';
+            }
+        } catch (error) {
+            console.error("Fetch error:", error);
+            statusEl.classList.remove('live');
+            statusTextEl.innerText = '断开连接';
+            
+            if(isFirstLoad) {
+                document.getElementById('app').innerHTML = `
+                    <div class="error-msg">
+                        无法获取数据。<br>请检查 API_URL 配置或网络状态。
+                    </div>
+                `;
+            }
+        }
+    }
+
+    // 渲染 UI
+    function updateUI(items) {
+        const container = document.getElementById('app');
+        
+        // 如果是第一次加载，清空 Loading
+        if (isFirstLoad) {
+            container.innerHTML = '';
+            isFirstLoad = false;
+        }
+
+        // 简单的去重逻辑：只渲染比页面上已有的第一条更新的数据
+        // 实际生产中这里建议使用更复杂的 Diff 算法，但对于个人版，直接重绘或简单比对即可
+        // 这里为了演示流畅性，采用全量重绘（数量少）或简单的DOM插入
+        
+        // 这里我们采用简单的清空重绘策略，保证顺序正确
+        // 优化：为了防止闪烁，只有当第一条数据的ID不同时才重绘
+        
+        // 注意：实际金十API返回的是一个数组，包含多条
+        // 我们只取前 50 条展示
+        const displayItems = items.slice(0, 50);
+        
+        // 检查是否有新数据 (对比最新一条的时间或ID)
+        const latestItem = displayItems[0];
+        if (lastUpdateParams.id === latestItem.id) {
+            return; // 没有新数据，跳过 DOM 操作
+        }
+        
+        lastUpdateParams.id = latestItem.id;
+        container.innerHTML = ''; // 清空容器
+
+        displayItems.forEach(item => {
+            // 过滤掉非快讯内容 (如果有)
+            if (!item.data || !item.data.content) return;
+
+            const div = document.createElement('div');
+            
+            // 判断是否重要 (金十通常在重要消息content里含有html标签或者通过vip字段判断)
+            // 这里做个简单的关键词判定或样式判定
+            let isImportant = item.important === 1 || item.data.content.includes('<b>');
+            
+            div.className = `news-item ${isImportant ? 'important' : ''}`;
+            
+            // 允许 HTML 内容渲染 (因为金十数据带有 <br> 和 <b> 标签)
+            // 安全提示：由于源是可信的金十数据，这里 innerHTML 风险较低
+            div.innerHTML = `
+                <div class="time">${formatTime(item.time)}</div>
+                <div class="content">${item.data.content}</div>
+            `;
+            
+            container.appendChild(div);
+        });
+    }
+
+    // 启动 PWA Service Worker
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js')
+                .then(reg => console.log('SW registered'))
+                .catch(err => console.log('SW error', err));
+        });
+    }
+
+    // 初始化
+    fetchNews();
+    
+    // 轮询：每 5 秒请求一次
+    setInterval(fetchNews, 5000);
+
+</script>
 </body>
 </html>
