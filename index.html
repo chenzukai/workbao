@@ -1,178 +1,181 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>金十实时快讯</title>
-  <meta name="description" content="实时金十数据快讯，秒级更新，支持安装为APP"/>
-  <meta name="theme-color" content="#1a1a1a"/>
-  
-  <!-- iOS 支持 PWA -->
+  <meta name="description" content="金十数据秒级实时快讯，支持安装为手机APP">
+  <meta name="theme-color" content="#000000">
+
+  <!-- iOS PWA 支持 -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="金十快讯">
-  <link rel="apple-touch-icon" href="https://cdn.jin10.com/assets/img/favicon.ico">
+  <link rel="apple-touch-icon" href="https://cdn.jin10.com/assets/img/favicon/apple-touch-icon.png">
 
-  <!-- PWA 图标（推荐准备 192x192 和 512x512 两张） -->
-  <link rel="icon" href="https://cdn.jin10.com/favicon.ico" sizes="192x192">
-  <link rel="apple-touch-icon" href="https://cdn.jin10.com/favicon.ico">
+  <!-- PWA 图标与 manifest -->
+  <link rel="icon" href="https://cdn.jin10.com/assets/favicon/favicon-32x32.png" sizes="32x32">
+  <link rel="icon" href="https://cdn.jin10.com/assets/favicon/favicon-192x192.png" sizes="192x192">
   <link rel="manifest" href="manifest.json">
 
   <style>
     :root {
       --bg: #000;
-      --card-bg: #111;
+      --card: #111;
       --text: #fff;
-      --text-secondary: #aaa;
-      --accent: #d4af37;
+      --sub: #aaa;
+      --gold: #d4af37;
     }
     @media (prefers-color-scheme: light) {
       :root {
         --bg: #fff;
-        --card-bg: #f8f8f9;
+        --card: #f8f8f9;
         --text: #000;
-        --text-secondary: #666;
+        --sub: #666;
       }
     }
+    body { margin:0; padding:0; box-sizing:border-box; }
     body {
-      margin: 0;
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
       background: var(--bg);
       color: var(--text);
       overscroll-behavior: none;
+      padding-top: env(safe-area-inset-top);
     }
     header {
       position: sticky;
       top: 0;
       background: var(--bg);
-      backdrop-filter: blur(10px);
-      border-bottom: 1px solid #333;
-      padding: 15px;
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      padding: 16px;
       text-align: center;
       font-size: 18px;
       font-weight: 600;
-      z-index: 10;
+      z-index: 100;
     }
-    .badge {
+    .live {
       display: inline-block;
-      background: var(--accent);
+      background: var(--gold);
       color: #000;
       font-size: 12px;
-      padding: 2px 8px;
-      border-radius: 10px;
+      font-weight: bold;
+      padding: 3px 9px;
+      border-radius: 12px;
       margin-left: 8px;
       animation: pulse 2s infinite;
     }
-    @keyframes pulse {
-      0% { opacity: 1; }
-      50% { opacity: 0.7; }
-      100% { opacity: 1; }
-    }
+    @keyframes pulse { 50% { opacity: 0.6; } }
     #list {
-      padding: 10px;
-      padding-top: 0;
+      padding: 12px;
     }
     .item {
-      background: var(--card-bg);
-      margin-bottom: 10px;
-      border-radius: 12px;
-      padding: 14px;
+      background: var(--card);
+      border-radius: 14px;
+      padding: 15px;
+      margin-bottom: 12px;
+      animation: in 0.4s;
       border-left: 4px solid transparent;
-      animation: slideIn 0.4s;
     }
     .item.important {
-      border-left-color: #d4af37;
-      background: rgba(212, 175, 55, 0.1);
+      border-left-color: var(--gold);
+      background: rgba(212,175,55,0.1);
     }
     .time {
-      color: var(--text-secondary);
+      color: var(--sub);
       font-size: 13px;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
     }
     .content {
-      line-height: 1.5;
-      font-size: 15px;
+      font-size: 15.5px;
+      line-height: 1.55;
+      white-space: pre-wrap;
     }
     .loading {
       text-align: center;
-      padding: 40px;
-      color: var(--text-secondary);
+      padding: 60px 20px;
+      color: var(--sub);
+      font-size: 15px;
     }
-    @keyframes slideIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
+    @keyframes in {
+      from { opacity:0; transform:translateY(20px); }
+      to   { opacity:1; transform:none; }
     }
   </style>
 </head>
 <body>
   <header>
     金十实时快讯
-    <span class="badge">LIVE</span>
+    <span class="live">LIVE</span>
   </header>
 
   <div id="list">
-    <div class="loading">正在加载快讯…</div>
+    <div class="loading">正在加载最新快讯…</div>
   </div>
 
-  <!-- PWA manifest（同目录下保存为 manifest.json） -->
   <script>
-    // 注册 Service Worker（离线缓存）
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js');
-    }
-  </script>
-
-  <script>
-    const listEl = document.getElementById('list');
+    const list = document.getElementById('list');
     let latestId = 0;
 
-    // 金十公开实时快讯接口（官方允许的 CORS 代理方式，稳定可用）
-    const API = "https://cdn.jin10.com/data/news/flash.json";
+    // 2025年11月最新稳定接口（官方公开，无需任何密钥）
+    const API = "https://flash-api.jin10.com/v1/flash/list?channel=-8200";
 
-    async function fetchNews() {
+    async function load() {
       try {
-        const res = await fetch(API + "?_t=${Date.now()}`);
-        const data = await res.json();
+        const res = await fetch(`${API}&_t=${Date.now()}`);
+        const { data } = await res.json();
 
-        // 金十返回的是数组，最新在前面
-        const news = data.filter(item => item.id > latestId);
+        if (!Array.isArray(data)) return;
 
-        if (news.length > 0) {
-          latestId = Math.max(...news.map(n => n.id));
+        const newItems = data.filter(item => item.id > latestId);
 
-          // 倒序插入（最新在上）
-          news.reverse().forEach(item => {
+        if (newItems.length > 0) {
+          latestId = Math.max(...newItems.map(i => i.id));
+
+          // 最新消息放在最上面
+          newItems.reverse().forEach(item => {
+            const important = item.remark?.includes('重要') || item.type === 1;
+
             const div = document.createElement('div');
-            div.className = `item ${item.type.includes('重要') ? 'important' : ''}`;
+            div.className = `item ${important ? 'important' : ''}`;
             div.innerHTML = `
-              <div class="time">${new Date(item.time).toLocaleString('zh-CN', {hour12: false})}</div>
+              <div class="time">${new Date(item.time).toLocaleString('zh-CN', {hour12:false})}</div>
               <div class="content">${item.content.replace(/\n/g, '<br>')}</div>
             `;
-            listEl.insertBefore(div, listEl.firstChild);
+            list.insertBefore(div, list.firstChild);
           });
         }
-      } catch (e) {
-        console.error(e);
+
+        // 清除加载提示
+        if (list.querySelector('.loading')) {
+          list.querySelector('.loading').remove();
+        }
+      } catch (err) {
+        console.error('加载失败', err);
       }
     }
 
-    // 首次加载
-    fetchNews();
+    // 立即加载一次
+    load();
 
-    // 每 4 秒轮询一次（金十更新频率极高）
-    setInterval(fetchNews, 4000);
+    // 每 3 秒轮询一次（金十更新极快）
+    setInterval(load, 3000);
 
-    // 下拉刷新（移动端）
-    let startY;
-    window.addEventListener('touchstart', e => startY = e.touches[0].clientY);
+    // 下拉刷新（手机端）
+    let touchStart = 0;
+    window.addEventListener('touchstart', e => touchStart = e.touches[0].clientY);
     window.addEventListener('touchend', e => {
-      if (!startY) return;
-      const endY = e.changedTouches[0].clientY;
-      if (window.scrollY === 0 && endY - startY > 100) {
+      if (window.scrollY <= 0 && e.changedTouches[0].clientY - touchStart > 100) {
         location.reload();
       }
-      startY = null;
     });
+  </script>
+
+  <!-- 注册 Service Worker 实现离线缓存（可选，但强烈推荐） -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
   </script>
 </body>
 </html>
