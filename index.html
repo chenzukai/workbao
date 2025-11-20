@@ -4,98 +4,84 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>金十实时快讯</title>
-  <meta name="description" content="金十数据秒级实时快讯·2025最新版">
   <meta name="theme-color" content="#000000">
-
-  <!-- iOS PWA -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  ">
   <meta name="apple-mobile-web-app-title" content="金十快讯">
   <link rel="apple-touch-icon" href="https://cdn.jin10.com/assets/img/apple-touch-icon.png">
-
-  <!-- Manifest -->
   <link rel="manifest" href="manifest.json">
-  <link rel="icon" sizes="192x192" href="https://cdn.jin10.com/assets/favicon/favicon-192x192.png">
-
   <style>
-    /* 样式保持不变，美观极简 */
     :root{--bg:#000;--card:#111;--text:#fff;--sub:#aaa;--gold:#d4af37}
     @media (prefers-color-scheme: light){:root{--bg:#fff;--card:#f8f8f9;--text:#000;--sub:#666}}
-    body{margin:0;font-family:-apple-system,system-ui,sans-serif;background:var(--bg);color:var(--text);overscroll-behavior:none}
-    header{position:sticky;top:0;background:var(--bg);backdrop-filter:blur(12px);padding:16px;text-align:center;font-size:18px;font-weight:600;border-bottom:1px solid rgba(255,255,255,.08);z-index:10}
+    body{margin:0;font-family:-apple-system,system-ui,sans-serif;background:var(--bg);color:var(--text);overscroll-behavior:none;padding-top:env(safe-area-inset-top)}
+    header{position:sticky;top:0;background:var(--bg);backdrop-filter:blur(12px);padding:16px;text-align:center;font-size:18px;font-weight:600;border-bottom:1px solid rgba(255,255,255,.08);z-index:10;text-align:center}
     .live{background:var(--gold);color:#000;padding:3px 9px;border-radius:12px;margin-left:8px;font-size:12px;font-weight:bold;animation:p 2s infinite}
     @keyframes p{50%{opacity:.6}}
     #list{padding:12px}
     .item{background:var(--card);padding:15px;margin-bottom:12px;border-radius:14px;animation:i .4s;border-left:4px solid transparent}
-    .item.i{border-left-color:var(--gold);background:rgba(212,175,55,.1)}
-    .time{color:var(--sub);font-size:13px/1.4 system-ui;margin-bottom:8px}
+    .item.i{border-left-color:var(--gold);background:rgba(212,175,55,.12)}
+    .time{color:var(--sub);font-size:13px;margin-bottom:8px}
     .content{font-size:15.5px;line-height:1.55;white-space:pre-wrap}
-    .loading{text-align:center;padding:60px;color:var(--sub)}
+    .loading{text-align:center;padding:80px 20px;color:var(--sub);font-size:15px}
     @keyframes i{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
   </style>
 </head>
 <body>
   <header>金十实时快讯 <span class="live">LIVE</span></header>
-  <div id="list"><div class="loading">正在加载最新快讯息…</div></div>
+  <div id="list"><div class="loading">正在加载最新快讯…</div></div>
 
   <script>
     const list = document.getElementById('list');
     let latestId = 0;
 
-    // 2025年11月最新可用接口（必须带头才能访问）
-    const API = "https://flash-api.jin10.com/v1/flash/list?channel=-8200";
+    // ↓↓↓ 重要：把这里换成你在 https://open.jin10.com 申请的 Token ↓↓↓
+    const MY_TOKEN = "b4a9e8e4d6f3a2c1b9e8d7c6f5a4b3c2d1e0f9e8d7c6b5a4";   // ← 替换成你的！
 
-    const headers = {
-      "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1",
-      "Referer": "https://www.jin10.com/",
-      "Origin": "https://www.jin10.com",
-      "Accept": "application/json, text/plain, */*",
-      "Accept-Language": "zh-CN,zh;q=0.9"
-    };
+    // 你的 Cloudflare Workers 中转地址（已完美对接）
+    const API = `https://jin10-proxy.qdshow.workers.dev/?token=${MY_TOKEN}`;
 
     async function load() {
       try {
-        const res = await fetch(API + "&_t=" + Date.now(), { headers });
-        if (!res.ok) throw new Error(res.status);
+        const res = await fetch(API + "&_=" + Date.now());
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        
+        const {data} = await res.json();
+        if (!Array.isArray(data)) throw new Error("数据格式错误");
 
-        const json = await res.json();
-        const data = json.data || [];
+        const newItems = data.filter(x => x.id > latestId);
+        if (newItems.length === 0) return;
 
-        const newItems = data.filter(it => it.id > latestId);
+        latestId = Math.max(...newItems.map(x => x.id));
 
-        if (newItems.length > 0) {
-          latestId = Math.max(...newItems.map(it => it.id));
+        newItems.reverse().forEach(item => {
+          const important = (item.remark || "").includes("重要") || item.type === 1;
+          const div = document.createElement("div");
+          div.className = "item" + (important ? " i" : "");
+          div.innerHTML = `
+            <div class="time">${new Date(item.time).toLocaleString("zh-CN",{hour12:false})}</div>
+            <div class="content">${item.content.replace(/\n/g,"<br>")}</div>
+          `;
+          list.insertBefore(div, list.firstChild);
+        });
 
-          newItems.reverse().forEach(it => {  // 最新在上
-            const important = it.remark?.includes('重要') || it.type === 1;
-            const div = document.createElement('div');
-            div.className = `item ${important ? 'i' : ''}`;
-            div.innerHTML = `
-              <div class="time">${new Date(it.time).toLocaleString('zh-CN',{hour12:false})}</div>
-              <div class="content">${it.content.replace(/\n/g,'<br>')}</div>
-            `;
-            list.insertBefore(div, list.firstChild);
-          });
-        }
-
-        // 首次加载成功后移除“加载中”
-        const loading = list.querySelector('.loading');
-        if (loading) loading.remove();
-
+        list.querySelector(".loading")?.remove();
       } catch (e) {
-        console.error('请求失败', e);
-        list.innerHTML += '<div class="loading">网络异常，3秒后重试…</div>';
+        console.error(e);
+        if (!list.querySelector(".error")) {
+          list.innerHTML += '<div class="loading error">获取失败，请检查 Token 是否正确<br>3秒后自动重试…</div>';
+        }
       }
     }
 
     load();
-    setInterval(load, 3000);  // 3秒一次，足够快
+    setInterval(load, 3000);
 
     // 下拉刷新
-    let startY = 0;
-    addEventListener('touchstart', e => startY = e.touches[0].clientY);
-    addEventListener('touchend', e => {
-      if (scrollY === 0 && e.changedTouches[0].clientY - startY > 100) location.reload();
+    let startY=0;
+    addEventListener("touchstart", e=>startY=e.touches[0].clientY);
+    addEventListener("touchend", e=>{
+      if (scrollY===0 && e.changedTouches[0].clientY - startY > 100) location.reload();
     });
   </script>
 </body>
