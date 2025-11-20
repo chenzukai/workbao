@@ -1,2 +1,2 @@
-# workbao
-This is my first website, work for good.
+财经资讯，炒股必备
+即时信息，即时行情
