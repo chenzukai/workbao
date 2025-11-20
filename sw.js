@@ -1,17 +1,23 @@
-const CACHE = 'jin10-flash-v1';
+const CACHE_NAME = 'jin10-pwa-v1';
+const urlsToCache = [
+  './',
+  './index.html'
+];
 
-self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(CACHE).then(cache => cache.addAll([
-      './',
-      'index.html',
-      'manifest.json'
-    ]))
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => cache.addAll(urlsToCache))
   );
 });
 
-self.addEventListener('fetch', e => {
-  e.respondWith(
-    caches.match(e.request).then(res => res || fetch(e.request))
+self.addEventListener('fetch', event => {
+  // 对于 API 请求，总是网络优先；对于静态资源，缓存优先
+  if (event.request.url.includes('/api/')) {
+      return; 
+  }
+  event.respondWith(
+    caches.match(event.request)
+      .then(response => response || fetch(event.request))
   );
 });
