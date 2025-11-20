@@ -4,178 +4,99 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>金十实时快讯</title>
-  <meta name="description" content="金十数据秒级实时快讯，支持安装为手机APP">
+  <meta name="description" content="金十数据秒级实时快讯·2025最新版">
   <meta name="theme-color" content="#000000">
 
-  <!-- iOS PWA 支持 -->
+  <!-- iOS PWA -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="金十快讯">
-  <link rel="apple-touch-icon" href="https://cdn.jin10.com/assets/img/favicon/apple-touch-icon.png">
+  <link rel="apple-touch-icon" href="https://cdn.jin10.com/assets/img/apple-touch-icon.png">
 
-  <!-- PWA 图标与 manifest -->
-  <link rel="icon" href="https://cdn.jin10.com/assets/favicon/favicon-32x32.png" sizes="32x32">
-  <link rel="icon" href="https://cdn.jin10.com/assets/favicon/favicon-192x192.png" sizes="192x192">
+  <!-- Manifest -->
   <link rel="manifest" href="manifest.json">
+  <link rel="icon" sizes="192x192" href="https://cdn.jin10.com/assets/favicon/favicon-192x192.png">
 
   <style>
-    :root {
-      --bg: #000;
-      --card: #111;
-      --text: #fff;
-      --sub: #aaa;
-      --gold: #d4af37;
-    }
-    @media (prefers-color-scheme: light) {
-      :root {
-        --bg: #fff;
-        --card: #f8f8f9;
-        --text: #000;
-        --sub: #666;
-      }
-    }
-    body { margin:0; padding:0; box-sizing:border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      overscroll-behavior: none;
-      padding-top: env(safe-area-inset-top);
-    }
-    header {
-      position: sticky;
-      top: 0;
-      background: var(--bg);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid rgba(255,255,255,0.08);
-      padding: 16px;
-      text-align: center;
-      font-size: 18px;
-      font-weight: 600;
-      z-index: 100;
-    }
-    .live {
-      display: inline-block;
-      background: var(--gold);
-      color: #000;
-      font-size: 12px;
-      font-weight: bold;
-      padding: 3px 9px;
-      border-radius: 12px;
-      margin-left: 8px;
-      animation: pulse 2s infinite;
-    }
-    @keyframes pulse { 50% { opacity: 0.6; } }
-    #list {
-      padding: 12px;
-    }
-    .item {
-      background: var(--card);
-      border-radius: 14px;
-      padding: 15px;
-      margin-bottom: 12px;
-      animation: in 0.4s;
-      border-left: 4px solid transparent;
-    }
-    .item.important {
-      border-left-color: var(--gold);
-      background: rgba(212,175,55,0.1);
-    }
-    .time {
-      color: var(--sub);
-      font-size: 13px;
-      margin-bottom: 8px;
-    }
-    .content {
-      font-size: 15.5px;
-      line-height: 1.55;
-      white-space: pre-wrap;
-    }
-    .loading {
-      text-align: center;
-      padding: 60px 20px;
-      color: var(--sub);
-      font-size: 15px;
-    }
-    @keyframes in {
-      from { opacity:0; transform:translateY(20px); }
-      to   { opacity:1; transform:none; }
-    }
+    /* 样式保持不变，美观极简 */
+    :root{--bg:#000;--card:#111;--text:#fff;--sub:#aaa;--gold:#d4af37}
+    @media (prefers-color-scheme: light){:root{--bg:#fff;--card:#f8f8f9;--text:#000;--sub:#666}}
+    body{margin:0;font-family:-apple-system,system-ui,sans-serif;background:var(--bg);color:var(--text);overscroll-behavior:none}
+    header{position:sticky;top:0;background:var(--bg);backdrop-filter:blur(12px);padding:16px;text-align:center;font-size:18px;font-weight:600;border-bottom:1px solid rgba(255,255,255,.08);z-index:10}
+    .live{background:var(--gold);color:#000;padding:3px 9px;border-radius:12px;margin-left:8px;font-size:12px;font-weight:bold;animation:p 2s infinite}
+    @keyframes p{50%{opacity:.6}}
+    #list{padding:12px}
+    .item{background:var(--card);padding:15px;margin-bottom:12px;border-radius:14px;animation:i .4s;border-left:4px solid transparent}
+    .item.i{border-left-color:var(--gold);background:rgba(212,175,55,.1)}
+    .time{color:var(--sub);font-size:13px/1.4 system-ui;margin-bottom:8px}
+    .content{font-size:15.5px;line-height:1.55;white-space:pre-wrap}
+    .loading{text-align:center;padding:60px;color:var(--sub)}
+    @keyframes i{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
   </style>
 </head>
 <body>
-  <header>
-    金十实时快讯
-    <span class="live">LIVE</span>
-  </header>
-
-  <div id="list">
-    <div class="loading">正在加载最新快讯…</div>
-  </div>
+  <header>金十实时快讯 <span class="live">LIVE</span></header>
+  <div id="list"><div class="loading">正在加载最新快讯息…</div></div>
 
   <script>
     const list = document.getElementById('list');
     let latestId = 0;
 
-    // 2025年11月最新稳定接口（官方公开，无需任何密钥）
+    // 2025年11月最新可用接口（必须带头才能访问）
     const API = "https://flash-api.jin10.com/v1/flash/list?channel=-8200";
+
+    const headers = {
+      "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1",
+      "Referer": "https://www.jin10.com/",
+      "Origin": "https://www.jin10.com",
+      "Accept": "application/json, text/plain, */*",
+      "Accept-Language": "zh-CN,zh;q=0.9"
+    };
 
     async function load() {
       try {
-        const res = await fetch(`${API}&_t=${Date.now()}`);
-        const { data } = await res.json();
+        const res = await fetch(API + "&_t=" + Date.now(), { headers });
+        if (!res.ok) throw new Error(res.status);
 
-        if (!Array.isArray(data)) return;
+        const json = await res.json();
+        const data = json.data || [];
 
-        const newItems = data.filter(item => item.id > latestId);
+        const newItems = data.filter(it => it.id > latestId);
 
         if (newItems.length > 0) {
-          latestId = Math.max(...newItems.map(i => i.id));
+          latestId = Math.max(...newItems.map(it => it.id));
 
-          // 最新消息放在最上面
-          newItems.reverse().forEach(item => {
-            const important = item.remark?.includes('重要') || item.type === 1;
-
+          newItems.reverse().forEach(it => {  // 最新在上
+            const important = it.remark?.includes('重要') || it.type === 1;
             const div = document.createElement('div');
-            div.className = `item ${important ? 'important' : ''}`;
+            div.className = `item ${important ? 'i' : ''}`;
             div.innerHTML = `
-              <div class="time">${new Date(item.time).toLocaleString('zh-CN', {hour12:false})}</div>
-              <div class="content">${item.content.replace(/\n/g, '<br>')}</div>
+              <div class="time">${new Date(it.time).toLocaleString('zh-CN',{hour12:false})}</div>
+              <div class="content">${it.content.replace(/\n/g,'<br>')}</div>
             `;
             list.insertBefore(div, list.firstChild);
           });
         }
 
-        // 清除加载提示
-        if (list.querySelector('.loading')) {
-          list.querySelector('.loading').remove();
-        }
-      } catch (err) {
-        console.error('加载失败', err);
+        // 首次加载成功后移除“加载中”
+        const loading = list.querySelector('.loading');
+        if (loading) loading.remove();
+
+      } catch (e) {
+        console.error('请求失败', e);
+        list.innerHTML += '<div class="loading">网络异常，3秒后重试…</div>';
       }
     }
 
-    // 立即加载一次
     load();
+    setInterval(load, 3000);  // 3秒一次，足够快
 
-    // 每 3 秒轮询一次（金十更新极快）
-    setInterval(load, 3000);
-
-    // 下拉刷新（手机端）
-    let touchStart = 0;
-    window.addEventListener('touchstart', e => touchStart = e.touches[0].clientY);
-    window.addEventListener('touchend', e => {
-      if (window.scrollY <= 0 && e.changedTouches[0].clientY - touchStart > 100) {
-        location.reload();
-      }
+    // 下拉刷新
+    let startY = 0;
+    addEventListener('touchstart', e => startY = e.touches[0].clientY);
+    addEventListener('touchend', e => {
+      if (scrollY === 0 && e.changedTouches[0].clientY - startY > 100) location.reload();
     });
-  </script>
-
-  <!-- 注册 Service Worker 实现离线缓存（可选，但强烈推荐） -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch(() => {});
-    }
   </script>
 </body>
 </html>
