@@ -36,10 +36,12 @@
     let latestId = 0;
 
     // ↓↓↓ 重要：把这里换成你在 https://open.jin10.com 申请的 Token ↓↓↓
-    const MY_TOKEN = "b4a9e8e4d6f3a2c1b9e8d7c6f5a4b3c2d1e0f9e8d7c6b5a4";   // ← 替换成你的！
+    //const MY_TOKEN = "b4a9e8e4d6f3a2c1b9e8d7c6f5a4b3c2d1e0f9e8d7c6b5a4";   // ← 替换成你的！
 
     // 你的 Cloudflare Workers 中转地址（已完美对接）
-    const API = `https://jin10-proxy.qdshow.workers.dev/?token=${MY_TOKEN}`;
+    const API = "https://jin10-proxy.qdshow.workers.dev/?token=b4a9e8e4d6f3a2c1b9e8d7c6f5a4b3c2d1e0f9e8d7c6b5a4";
+    
+    //const API = `https://jin10-proxy.qdshow.workers.dev/?token=${MY_TOKEN}`;
 
     async function load() {
       try {
