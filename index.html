@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>金十实时快讯</title>
+  <meta name="description" content="实时金十数据快讯，秒级更新，支持安装为APP"/>
+  <meta name="theme-color" content="#1a1a1a"/>
+  
+  <!-- iOS 支持 PWA -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="金十快讯">
+  <link rel="apple-touch-icon" href="https://cdn.jin10.com/assets/img/favicon.ico">
+
+  <!-- PWA 图标（推荐准备 192x192 和 512x512 两张） -->
+  <link rel="icon" href="https://cdn.jin10.com/favicon.ico" sizes="192x192">
+  <link rel="apple-touch-icon" href="https://cdn.jin10.com/favicon.ico">
+  <link rel="manifest" href="manifest.json">
+
+  <style>
+    :root {
+      --bg: #000;
+      --card-bg: #111;
+      --text: #fff;
+      --text-secondary: #aaa;
+      --accent: #d4af37;
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #fff;
+        --card-bg: #f8f8f9;
+        --text: #000;
+        --text-secondary: #666;
+      }
+    }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overscroll-behavior: none;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid #333;
+      padding: 15px;
+      text-align: center;
+      font-size: 18px;
+      font-weight: 600;
+      z-index: 10;
+    }
+    .badge {
+      display: inline-block;
+      background: var(--accent);
+      color: #000;
+      font-size: 12px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      margin-left: 8px;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.7; }
+      100% { opacity: 1; }
+    }
+    #list {
+      padding: 10px;
+      padding-top: 0;
+    }
+    .item {
+      background: var(--card-bg);
+      margin-bottom: 10px;
+      border-radius: 12px;
+      padding: 14px;
+      border-left: 4px solid transparent;
+      animation: slideIn 0.4s;
+    }
+    .item.important {
+      border-left-color: #d4af37;
+      background: rgba(212, 175, 55, 0.1);
+    }
+    .time {
+      color: var(--text-secondary);
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+    .content {
+      line-height: 1.5;
+      font-size: 15px;
+    }
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-secondary);
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    金十实时快讯
+    <span class="badge">LIVE</span>
+  </header>
+
+  <div id="list">
+    <div class="loading">正在加载快讯…</div>
+  </div>
+
+  <!-- PWA manifest（同目录下保存为 manifest.json） -->
+  <script>
+    // 注册 Service Worker（离线缓存）
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
+    }
+  </script>
+
+  <script>
+    const listEl = document.getElementById('list');
+    let latestId = 0;
+
+    // 金十公开实时快讯接口（官方允许的 CORS 代理方式，稳定可用）
+    const API = "https://cdn.jin10.com/data/news/flash.json";
+
+    async function fetchNews() {
+      try {
+        const res = await fetch(API + "?_t=${Date.now()}`);
+        const data = await res.json();
+
+        // 金十返回的是数组，最新在前面
+        const news = data.filter(item => item.id > latestId);
+
+        if (news.length > 0) {
+          latestId = Math.max(...news.map(n => n.id));
+
+          // 倒序插入（最新在上）
+          news.reverse().forEach(item => {
+            const div = document.createElement('div');
+            div.className = `item ${item.type.includes('重要') ? 'important' : ''}`;
+            div.innerHTML = `
+              <div class="time">${new Date(item.time).toLocaleString('zh-CN', {hour12: false})}</div>
+              <div class="content">${item.content.replace(/\n/g, '<br>')}</div>
+            `;
+            listEl.insertBefore(div, listEl.firstChild);
+          });
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    // 首次加载
+    fetchNews();
+
+    // 每 4 秒轮询一次（金十更新频率极高）
+    setInterval(fetchNews, 4000);
+
+    // 下拉刷新（移动端）
+    let startY;
+    window.addEventListener('touchstart', e => startY = e.touches[0].clientY);
+    window.addEventListener('touchend', e => {
+      if (!startY) return;
+      const endY = e.changedTouches[0].clientY;
+      if (window.scrollY === 0 && endY - startY > 100) {
+        location.reload();
+      }
+      startY = null;
+    });
+  </script>
+</body>
+</html>
